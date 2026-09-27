@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Domain;
@@ -40,7 +39,7 @@ final readonly class Uang
         return new self((int) round($this->rupiah * $persen / 100));
     }
 
-    public function bulatkankeAtas(int $kelipatan): self
+    public function bulatkanKeAtas(int $kelipatan): self
     {
         return new self((int) (ceil($this->rupiah / $kelipatan) * $kelipatan));
     }

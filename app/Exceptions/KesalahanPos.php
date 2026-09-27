@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Exceptions;
@@ -11,7 +10,7 @@ abstract class KesalahanPos extends RuntimeException
 {
     abstract public function kodeHttp(): int;
 
-    public function kodekesalahan(): string
+    public function kodeKesalahan(): string
     {
         return Str::snake(class_basename($this));
     }
