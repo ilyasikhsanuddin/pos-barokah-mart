@@ -1,0 +1,104 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repositories;
+
+use App\Contracts\RepositoriTransaksi;
+use App\Models\ItemTransaksi;
+use App\Models\Produk;
+use App\Models\Transaksi;
+
+final class RepositoriTransaksiEloquent implements RepositoriTransaksi
+{
+    public function tanggal(string $tanggal): array
+    {
+        return Transaksi::query()
+            ->tanggal($tanggal)
+            ->orderBy('nomor')
+            ->get()
+            ->map($this->keArray(...))
+            ->all();
+    }
+
+    public function cariNomor(string $nomor): ?array
+    {
+        $transaksi = Transaksi::query()
+            ->where('nomor', $nomor)
+            ->first();
+
+        return $transaksi === null ? null : $this->keArray($transaksi);
+    }
+
+    public function simpan(array $transaksi): void
+    {
+        $item = $transaksi['item'];
+
+        unset($transaksi['item']);
+
+        $baris = Transaksi::create($transaksi);
+
+        $idProduk = Produk::query()
+            ->whereIn('sku', array_column($item, 'sku'))
+            ->pluck('id', 'sku');
+
+        ItemTransaksi::insert(array_map(
+            static fn (array $b): array => [
+                'transaksi_id' => $baris->id,
+                'produk_id' => $idProduk[$b['sku']],
+                'sku' => $b['sku'],
+                'nama_produk' => $b['nama'],
+                'harga_satuan' => $b['harga_satuan'],
+                'kuantitas' => $b['kuantitas'],
+                'diskon' => $b['diskon'],
+                'total' => $b['total'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            $item,
+        ));
+    }
+
+    public function perbarui(string $nomor, array $perubahan): void
+    {
+        Transaksi::query()
+            ->where('nomor', $nomor)
+            ->update($perubahan);
+    }
+
+    public function urutanBerikutnya(string $tanggal): int
+    {
+        return Transaksi::query()
+            ->where(
+                'nomor',
+                'like',
+                'POS-' . str_replace('-', '', $tanggal) . '-%'
+            )
+            ->count() + 1;
+    }
+
+    private function keArray(Transaksi $transaksi): array
+    {
+        return [
+            'nomor' => $transaksi->nomor,
+            'kasir' => $transaksi->kasir,
+            'member' => $transaksi->member,
+            'metode_bayar' => $transaksi->metode_bayar->value,
+            'status' => $transaksi->status->value,
+            'subtotal' => $transaksi->subtotal,
+            'diskon_grosir' => $transaksi->diskon_grosir,
+            'diskon_member' => $transaksi->diskon_member,
+            'total_diskon' => $transaksi->total_diskon,
+            'dpp' => $transaksi->dpp,
+            'ppn' => $transaksi->ppn,
+            'total' => $transaksi->total,
+            'pembulatan' => $transaksi->pembulatan,
+            'total_bayar' => $transaksi->total_bayar,
+            'dibayar' => $transaksi->dibayar,
+            'kembalian' => $transaksi->kembalian,
+            'alasan_batal' => $transaksi->alasan_batal,
+            'dibatalkan_oleh' => $transaksi->dibatalkan_oleh,
+            'dibatalkan_pada' => $transaksi->dibatalkan_pada?->toISOString(),
+        ];
+    }
+}
