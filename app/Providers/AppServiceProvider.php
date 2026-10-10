@@ -11,8 +11,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(RepositoriProduk::class, RepositoriProdukEloquent::class); 
-        $this->app->bind(RepositoriTransaksi::class, RepositoriTransaksiEloquent::class); 
+        //
     }
 
     /**
