@@ -1,0 +1,12 @@
+# Konfigurasi linter kontrak API. Dibaca otomatis oleh `npx @redocly/cli lint`.
+extends:
+  - recommended
+
+rules:
+  # Dokumen ini dipakai internal tim dan tidak dipublikasikan.
+  info-license: off
+  # /ping tidak memakai kunci API dan tidak punya jalur gagal.
+  operation-4xx-response: off
+  # Contoh yang tidak cocok dengan schema-nya adalah dokumentasi yang berbohong.
+  no-invalid-media-type-examples: error
+  no-invalid-schema-examples: error
