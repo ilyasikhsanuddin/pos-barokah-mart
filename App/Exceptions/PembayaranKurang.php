@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-final class StokTidakCukup extends KesalahanPos
+final class PembayaranKurang extends KesalahanPos
 {
     public function kodeHttp(): int
     {

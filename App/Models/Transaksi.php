@@ -34,6 +34,8 @@ final class Transaksi extends Model
         ]; 
     } 
   
+    public function item() { return $this->hasMany(ItemTransaksi::class); }
+    
     public function scopeSelesai($query) 
     { 
         return $query->where('status', StatusTransaksi::Selesai); 

@@ -17,16 +17,31 @@ final class LayananLaporan
     /** @return array<string, mixed> */
     public function harian(string $tanggal): array
     {
-        $selesai = $this->transaksiSelesai($tanggal);
+        // Kueri 1: Agregat ringkasan transaksi utama pada tanggal tersebut
+        $ringkasan = \App\Models\Transaksi::query()
+            ->whereDate('created_at', $tanggal)
+            ->where('status', \App\Domain\StatusTransaksi::Selesai)
+            ->selectRaw('COUNT(*) as jumlah, SUM(total_bayar) as omzet, SUM(ppn) as total_ppn, SUM(total_diskon) as total_diskon')
+            ->first();
 
-        $omzet = array_sum(array_column($selesai, 'total_bayar'));
-        $ppn = array_sum(array_column($selesai, 'ppn'));
-        $diskon = array_sum(array_column($selesai, 'total_diskon'));
-        $jumlah = count($selesai);
+        // Kueri 2: Pengelompokan omzet berdasarkan metode bayar
+        $perMetodeData = \App\Models\Transaksi::query()
+            ->whereDate('created_at', $tanggal)
+            ->where('status', \App\Domain\StatusTransaksi::Selesai)
+            ->selectRaw('metode_bayar, SUM(total_bayar) as total')
+            ->groupBy('metode_bayar')
+            ->pluck('total', 'metode_bayar')
+            ->all();
+
+        $jumlah = (int) ($ringkasan->jumlah ?? 0);
+        $omzet = (int) ($ringkasan->omzet ?? 0);
+        $ppn = (int) ($ringkasan->total_ppn ?? 0);
+        $diskon = (int) ($ringkasan->total_diskon ?? 0);
 
         $perMetode = [];
-        foreach ($selesai as $t) {
-            $perMetode[$t['metode_bayar']] = ($perMetode[$t['metode_bayar']] ?? 0) + $t['total_bayar'];
+        foreach ($perMetodeData as $metode => $total) {
+            $label = is_string($metode) ? $metode : ($metode->value ?? $metode);
+            $perMetode[$label] = (int) $total;
         }
 
         return [
@@ -69,12 +84,11 @@ final class LayananLaporan
     }
 
     /** @return array<int, array<string, mixed>> */
-    private function transaksiSelesai(string $tanggal): array
-    {
+    private function transaksiSelesai(string $tanggal): array 
+    { 
         return array_values(array_filter(
-            $this->transaksi->semua(),
+            $this->transaksi->tanggal($tanggal),
             static fn (array $t): bool => $t['status'] === 'selesai'
-                && str_starts_with($t['waktu'], $tanggal),
         ));
     }
 }

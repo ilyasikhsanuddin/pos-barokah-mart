@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CatatRequest;
+use App\Http\Middleware\HitungKueri;
 use App\Http\Middleware\JamOperasional;
 use App\Http\Middleware\KunciApiKasir;
 use App\Http\Middleware\PeranKasir;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Middleware global untuk semua route API
         $middleware->api(append: [
             CatatRequest::class,
+            HitungKueri::class, 
         ]);
 
         // Middleware yang dipanggil menggunakan alias
