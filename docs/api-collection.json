@@ -1,0 +1,12 @@
+// GET /v1/pos/laporan/harian
+pm.test("Status 200", function () {
+    pm.response.to.have.status(200);
+});
+pm.test("Bentuk response sesuai kontrak", function () {
+    const body = pm.response.json();
+    pm.expect(body.data).to.include.all.keys(
+        "tanggal", "jumlah_transaksi", "omzet", "omzet_format",
+        "total_diskon", "total_ppn", "rata_rata_struk", "per_metode_bayar"
+    );
+    pm.expect(body.data.omzet).to.be.a("number");
+});
