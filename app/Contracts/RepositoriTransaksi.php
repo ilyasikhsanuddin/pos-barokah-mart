@@ -1,12 +1,18 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Contracts;
 
-interface RepositoriTransaksi
+interface RepositoriProduk
 {
     public function semua(): array;
-    public function cariNomor(string $nomor): ?array;
-    public function simpan(array $transaksi): void;
-    public function perbarui(string $nomor, array $perubahan): void;
+
+    public function cariSku(string $sku): ?array;
+
+    public function cariPemasok(string $sku): ?array;
+
+    public function kunciStok(string $sku): int;
+
+    public function ubahStok(string $sku, int $selisih): void;
 }
