@@ -62,6 +62,38 @@ final class LayananKatalog
     }
 
     /**
+     * Pemasok sebuah produk beserta marginnya (AB-13). 
+     * Margin adalah aturan bisnis, karena itu dihitung di service, 
+     * bukan di repositori maupun di controller. 
+     * 
+     * @return array<string, mixed> 
+     */ 
+    public function pemasok(string $sku): array 
+    { 
+        $produk = $this->repositori->cariPemasok($sku); 
+  
+        if ($produk === null) { 
+            throw new ProdukTidakDitemukan($sku); 
+        } 
+  
+        $produk['pemasok'] = array_map( 
+            static function (array $p) use ($produk): array { 
+                $margin = $produk['harga'] - $p['harga_beli'];     // rupiah bulat 
+  
+                return $p + [ 
+                    'margin'        => $margin, 
+                    // Persentase HANYA untuk tampilan; perhitungan uang 
+                    // tetap memakai $margin yang berupa bilangan bulat. 
+                    'margin_persen' => round($margin * 100 / $produk['harga'], 1), 
+                ]; 
+            }, 
+            $produk['pemasok'], 
+        ); 
+  
+        return $produk; 
+    }
+
+    /**
      * @param  array<string, mixed>  $produk
      * @return array<string, mixed>
      */

@@ -12,9 +12,11 @@ final class DatabaseSeeder extends Seeder
     {
         $this->call([
             KategoriProdukSeeder::class,
+            PemasokSeeder::class,
             TransaksiContohSeeder::class,
             PemasokSeeder::class,
             PemasokProdukSeeder::class,
+            RiwayatPenjualanSeeder::class,   // BARU — harus setelah produk ada 
         ]);
     }
 }
