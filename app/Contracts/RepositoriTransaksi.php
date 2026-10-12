@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
-interface RepositoriTransaksi
+interface RepositoriProduk
 {
     public function semua(): array;
 

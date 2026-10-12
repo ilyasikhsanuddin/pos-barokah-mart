@@ -10,10 +10,11 @@ final class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // URUTAN PENTING: transaksi contoh membutuhkan produk yang sudah ada.
         $this->call([
             KategoriProdukSeeder::class,
+            PemasokSeeder::class,
             TransaksiContohSeeder::class,
+            RiwayatPenjualanseeder::class,
         ]);
     }
 }
