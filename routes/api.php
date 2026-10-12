@@ -1,5 +1,8 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Http\Controllers\Api\PemasokController;
 use App\Http\Controllers\Api\V1\LaporanController;
 use App\Http\Controllers\Api\V1\ProdukController;
 use App\Http\Controllers\Api\V1\TransaksiController;
@@ -47,4 +50,7 @@ Route::prefix('v1/pos')
             // AB-14: Penjualan per kategori 
             Route::get('/kategori', [LaporanController::class, 'kategori'])->name('kategori');
         });
+
+        // Rute Pemasok Baru (Fitur Tambahan HO5)
+        Route::get('/pemasok', [PemasokController::class, 'index'])->name('pemasok.index');
     });

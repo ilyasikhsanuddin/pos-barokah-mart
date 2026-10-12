@@ -5,23 +5,41 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Contracts\RepositoriProduk;
+<<<<<<< HEAD
+use App\Models\Produk;
+=======
 use App\Models\Pemasok;
 use App\Models\Produk;
 use Illuminate\Database\Eloquent\Builder;
+>>>>>>> main
 
 final class RepositoriProdukEloquent implements RepositoriProduk
 {
     public function semua(): array
     {
+<<<<<<< HEAD
+        return Produk::query()
+            ->orderBy('nama')
+            ->get()
+            ->map(fn (Produk $produk): array => $this->keArray($produk))
+=======
         return $this->dasar()
             ->orderBy('produk.nama')
             ->get()
             ->map($this->keArray(...))
+>>>>>>> main
             ->all();
     }
 
     public function cariSku(string $sku): ?array
     {
+<<<<<<< HEAD
+        $produk = Produk::query()
+            ->where('sku', $sku)
+            ->first();
+
+        return $produk ? $this->keArray($produk) : null;
+=======
         $produk = $this->dasar(aktifSaja: false)
             ->where('produk.sku', $this->normal($sku))
             ->first();
@@ -79,6 +97,7 @@ final class RepositoriProdukEloquent implements RepositoriProduk
     private function normal(string $sku): string
     {
         return strtoupper(trim($sku));
+>>>>>>> main
     }
 
     private function keArray(Produk $produk): array
@@ -86,9 +105,18 @@ final class RepositoriProdukEloquent implements RepositoriProduk
         return [
             'sku' => $produk->sku,
             'nama' => $produk->nama,
+<<<<<<< HEAD
+            'kategori' => $produk->kategori?->kode,
+            'harga' => (int) $produk->harga,
+            'stok' => (int) $produk->stok,
+        ];
+    }
+}
+=======
             'kategori' => $produk->kategori->kode,
             'harga' => $produk->harga,
             'stok' => $produk->stok,
         ];
     }
 }
+>>>>>>> main
