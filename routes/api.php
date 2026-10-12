@@ -1,5 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Http\Controllers\Api\PemasokController;
+use App\Http\Controllers\Api\V1\LaporanController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
@@ -38,15 +42,23 @@ Route::prefix('v1/pos')
             ]);
         })->middleware('peran:supervisor');
 
-        Route::get('/laporan/harian', function () {
-            return response()->json([
-                'message' => 'Laporan harian',
-            ]);
-        });
+        Route::get('/laporan/harian', [
+            LaporanController::class,
+            'harian',
+        ])->name('laporan.harian');
 
-        Route::get('/laporan/terlaris', function () {
-            return response()->json([
-                'message' => 'Produk terlaris',
-            ]);
-        });
+        Route::get('/laporan/terlaris', [
+            LaporanController::class,
+            'terlaris',
+        ])->name('laporan.terlaris');
+
+        Route::get('/laporan/kategori', [
+            LaporanController::class,
+            'kategori',
+        ])->name('laporan.kategori');
+
+        Route::get('/pemasok', [
+            PemasokController::class,
+            'index',
+        ])->name('pemasok.index');
     });

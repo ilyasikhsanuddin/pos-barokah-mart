@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Domain\Uang;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Produk extends Model
@@ -17,10 +18,7 @@ final class Produk extends Model
 
     /**
      * Kolom yang boleh diisi massal.
-     * "stok" SENGAJA tidak dimasukkan: stok hanya boleh berubah lewat
-     * LayananKasir yang menjalankan pengurangan di dalam transaksi basis
-     * data. Bila stok ada di sini, satu request nakal dapat menambah stok
-     * sendiri tanpa jejak.
+     * Stok hanya boleh berubah lewat LayananKasir.
      */
     protected $fillable = [
         'kategori_id',
@@ -41,9 +39,6 @@ final class Produk extends Model
 
     /* ---------------- Query scope ---------------- */
 
-    // Nama kolom ditulis lengkap (produk.aktif). Tabel kategori juga
-    // memiliki kolom "aktif", sehingga tanpa awalan nama tabel kueri
-    // yang memakai join akan gagal: "Column 'aktif' in where clause is ambiguous".
     public function scopeAktif($query)
     {
         return $query->where('produk.aktif', true);
@@ -56,7 +51,6 @@ final class Produk extends Model
 
     public function scopeKategoriKode($query, string $kode)
     {
-        // Subquery: relasi Eloquent baru dibahas pada Modul 5.
         return $query->whereIn(
             'kategori_id',
             Kategori::query()->where('kode', $kode)->select('id'),
@@ -64,9 +58,22 @@ final class Produk extends Model
     }
 
     /* ---------------- Accessor ---------------- */
-    /** Dipakai Uang dari Modul 2 agar format rupiah hanya ditulis satu kali. */
+
     public function hargaFormat(): string
     {
         return (new Uang($this->harga))->format();
+    }
+
+    /* ---------------- Relasi pemasok ---------------- */
+
+    public function pemasok(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Pemasok::class,
+            'pemasok_produk'
+        )
+            ->as('pasokan')
+            ->withPivot(['harga_beli', 'utama'])
+            ->withTimestamps();
     }
 }
