@@ -28,3 +28,6 @@ Thumbs.db
 /database/database.sqlite
 /database/*.sqlite-journal
 /storage/app/private/pos/
+# Backup database lokal
+/backup_barokah.sql
+/backup_barokah_2.sql
