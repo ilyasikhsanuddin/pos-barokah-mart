@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Repositories;
@@ -12,17 +13,19 @@ final class RepositoriTransaksiBerkas implements RepositoriTransaksi
 
     public function semua(): array
     {
-        if (!Storage::disk('local')->exists($this->path)) {
+        if (! Storage::disk('local')->exists($this->path)) {
             return [];
         }
 
         $isi = Storage::disk('local')->get($this->path);
+
         return json_decode($isi, true) ?? [];
     }
 
     public function cariNomor(string $nomor): ?array
     {
         $semua = $this->semua();
+
         return $semua[$nomor] ?? null;
     }
 
@@ -32,7 +35,7 @@ final class RepositoriTransaksiBerkas implements RepositoriTransaksi
         $semua[$transaksi['nomor']] = $transaksi;
 
         Storage::disk('local')->put(
-            $this->path, 
+            $this->path,
             json_encode($semua, JSON_PRETTY_PRINT)
         );
     }
@@ -43,7 +46,7 @@ final class RepositoriTransaksiBerkas implements RepositoriTransaksi
         if (isset($semua[$nomor])) {
             $semua[$nomor] = array_merge($semua[$nomor], $perubahan);
             Storage::disk('local')->put(
-                $this->path, 
+                $this->path,
                 json_encode($semua, JSON_PRETTY_PRINT)
             );
         }
