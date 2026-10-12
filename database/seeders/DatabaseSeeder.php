@@ -14,7 +14,7 @@ final class DatabaseSeeder extends Seeder
             KategoriProdukSeeder::class,
             PemasokSeeder::class,
             TransaksiContohSeeder::class,
-            RiwayatPenjualanseeder::class,
+            RiwayatPenjualanSeeder::class,   // BARU — harus setelah produk ada 
         ]);
     }
 }

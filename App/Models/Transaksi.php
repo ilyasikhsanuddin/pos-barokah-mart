@@ -36,6 +36,11 @@ final class Transaksi extends Model
         ]; 
     } 
   
+<<<<<<< HEAD:App/Models/Transaksi.php
+    public function item() { return $this->hasMany(ItemTransaksi::class); }
+    
+    public function scopeSelesai($query) 
+=======
     /* ---------------- Relasi ---------------- */ 
   
     /** 
@@ -43,6 +48,7 @@ final class Transaksi extends Model
      * kunci "item" pada response API sejak Modul 3. 
      */ 
     public function item(): HasMany 
+>>>>>>> main:app/Models/Transaksi.php
     { 
         return $this->hasMany(ItemTransaksi::class, 'transaksi_id'); 
     } 
