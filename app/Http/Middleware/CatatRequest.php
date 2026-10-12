@@ -34,7 +34,7 @@ final class CatatRequest
         ]);
 
         $response->headers->set('X-Request-Id', $idRequest);
-        $response->headers->set('X-Response-Time', $durasiMs . 'ms');
+        $response->headers->set('X-Response-Time', $durasiMs.'ms');
 
         return $response;
     }
