@@ -13,7 +13,6 @@ Route::prefix('v1/pos')
     ->name('api.v1.pos.')
     ->middleware('kasir')
     ->group(function () {
-
         Route::get('/produk', function () {
             return response()->json([
                 'message' => 'Daftar produk',
