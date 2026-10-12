@@ -10,15 +10,14 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ProdukFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            //
+            'sku' => strtoupper(fake()->unique()->bothify('SKU-####')),
+            'nama' => fake()->words(3, true),
+            'harga' => fake()->numberBetween(5000, 100000),
+            'stok' => fake()->numberBetween(0, 100),
+            'aktif' => true,
         ];
     }
 }

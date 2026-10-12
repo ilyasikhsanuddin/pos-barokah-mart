@@ -10,15 +10,24 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class KategoriFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
+        $kategori = fake()->randomElement([
+            'makanan',
+            'minuman',
+            'kebutuhan_rumah',
+            'alat_tulis',
+        ]);
+
         return [
-            //
+            'kode' => $kategori,
+            'nama' => match ($kategori) {
+                'makanan' => 'Makanan',
+                'minuman' => 'Minuman',
+                'kebutuhan_rumah' => 'Kebutuhan Rumah Tangga',
+                'alat_tulis' => 'Alat Tulis',
+            },
+            'aktif' => true,
         ];
     }
 }
