@@ -15,6 +15,13 @@ final class Produk extends Model
 
     protected $table = 'produk';
 
+    /**
+     * Kolom yang boleh diisi massal.
+     * "stok" SENGAJA tidak dimasukkan: stok hanya boleh berubah lewat
+     * LayananKasir yang menjalankan pengurangan di dalam transaksi basis
+     * data. Bila stok ada di sini, satu request nakal dapat menambah stok
+     * sendiri tanpa jejak.
+     */
     protected $fillable = [
         'kategori_id',
         'sku',
@@ -27,11 +34,16 @@ final class Produk extends Model
     {
         return [
             'harga' => 'integer',
-            'stok' => 'integer',
+            'stok'  => 'integer',
             'aktif' => 'boolean',
         ];
     }
 
+    /* ---------------- Query scope ---------------- */
+
+    // Nama kolom ditulis lengkap (produk.aktif). Tabel kategori juga
+    // memiliki kolom "aktif", sehingga tanpa awalan nama tabel kueri
+    // yang memakai join akan gagal: "Column 'aktif' in where clause is ambiguous".
     public function scopeAktif($query)
     {
         return $query->where('produk.aktif', true);
@@ -44,12 +56,15 @@ final class Produk extends Model
 
     public function scopeKategoriKode($query, string $kode)
     {
+        // Subquery: relasi Eloquent baru dibahas pada Modul 5.
         return $query->whereIn(
-            Kategori::query()->where('kode', $kode)->select('id'),
             'kategori_id',
+            Kategori::query()->where('kode', $kode)->select('id'),
         );
     }
 
+    /* ---------------- Accessor ---------------- */
+    /** Dipakai Uang dari Modul 2 agar format rupiah hanya ditulis satu kali. */
     public function hargaFormat(): string
     {
         return (new Uang($this->harga))->format();

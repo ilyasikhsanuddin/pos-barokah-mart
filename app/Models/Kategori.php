@@ -23,6 +23,7 @@ final class Kategori extends Model
         ];
     }
 
+    /** Menjembatani baris tabel dengan enum domain dari Modul 3. */
     public function enum(): EnumKategori
     {
         return EnumKategori::from($this->kode);
