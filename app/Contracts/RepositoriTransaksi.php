@@ -8,11 +8,9 @@ interface RepositoriProduk
 {
     public function semua(): array;
 
-    public function cariSku(string $sku): ?array;
+    public function cariNomor(string $nomor): ?array;
 
-    public function cariPemasok(string $sku): ?array;
+    public function simpan(array $transaksi): void;
 
-    public function kunciStok(string $sku): int;
-
-    public function ubahStok(string $sku, int $selisih): void;
+    public function perbarui(string $nomor, array $perubahan): void;
 }

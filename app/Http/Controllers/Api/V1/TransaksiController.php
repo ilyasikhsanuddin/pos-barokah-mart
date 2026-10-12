@@ -40,7 +40,7 @@ final class TransaksiController extends Controller
             'item.*.kuantitas' => ['required', 'integer', 'min:1'],
             'member' => ['sometimes', 'boolean'],
             'metode_bayar' => ['required', 'string', 'in:'.implode(',',
-array_column(MetodeBayar::cases(), 'value'))],
+            array_column(MetodeBayar::cases(), 'value'))],
             'dibayar' => ['required_if:metode_bayar,tunai', 'integer', 'min:0'],
         ]);
 
