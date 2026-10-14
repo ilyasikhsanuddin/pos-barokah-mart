@@ -1,77 +1,47 @@
-<?php
-
-declare(strict_types=1);
-
-namespace App\Http\Controllers\Api\V1;
-
-use App\Domain\MetodeBayar;
-use App\Http\Controllers\Controller;
-use App\Services\LayananKasir;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-
-final class TransaksiController extends Controller
-{
-    public function __construct(
-        private readonly LayananKasir $kasir,
-    ) {
-    }
-
-    public function index(Request $request): JsonResponse
-    {
-        $tanggal = $request->string('tanggal')->trim()->toString()
-            ?: now()->toDateString();
-
-        $transaksi = $this->kasir->transaksiTanggal($tanggal);
-
-        return response()->json([
-            'data' => $transaksi,
-            'meta' => ['tanggal' => $tanggal, 'jumlah' => count($transaksi)],
-        ]);
-    }
-
-    public function store(Request $request): JsonResponse
-    {
-        // Pemeriksaan bentuk masukan. Validasi mendalam dan pemindahannya
-        // ke Form Request dibahas pada Modul 7.
-        $data = $request->validate([
-            'item' => ['required', 'array', 'min:1'],
-            'item.*.sku' => ['required', 'string'],
-            'item.*.kuantitas' => ['required', 'integer', 'min:1'],
-            'member' => ['sometimes', 'boolean'],
-            'metode_bayar' => ['required', 'string', 'in:'.implode(',',
-            array_column(MetodeBayar::cases(), 'value'))],
-            'dibayar' => ['required_if:metode_bayar,tunai', 'integer', 'min:0'],
-        ]);
-
-        // Identitas kasir disisipkan oleh middleware KunciApiKasir.
-        $kasir = $request->attributes->get('kasir');
-
-        $transaksi = $this->kasir->proses($data, $kasir['nama']);
-
-        // 201 Created disertai header Location menuju sumber daya baru.
-        return response()
-            ->json(['data' => $transaksi], 201)
-            ->header('Location', route('api.v1.pos.transaksi.show', $transaksi['nomor']));
-    }
-
-    public function show(string $nomor): JsonResponse
-    {
-        return response()->json([
-            'data' => $this->kasir->cari($nomor),
-        ]);
-    }
-
-    public function batal(Request $request, string $nomor): JsonResponse
-    {
-        $data = $request->validate([
-            'alasan' => ['required', 'string', 'min:5', 'max:200'],
-        ]);
-
-        $kasir = $request->attributes->get('kasir');
-
-        return response()->json([
-            'data' => $this->kasir->batalkan($nomor, $data['alasan'], $kasir['nama']),
-        ]);
-    }
-}
+<?php 
+  
+declare(strict_types=1); 
+  
+namespace App\Http\Controllers\Api\V1; 
+  
+use App\Http\Controllers\Controller; 
+use App\Http\Resources\V1\StrukResource; 
+use App\Services\LayananKasir; 
+use Illuminate\Http\JsonResponse; 
+use Illuminate\Http\Request; 
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection; 
+  
+final class TransaksiController extends Controller 
+{ 
+    public function __construct( 
+        private readonly LayananKasir $kasir, 
+    ) {} 
+  
+    public function index(Request $request): AnonymousResourceCollection 
+    { 
+        $tanggal = $request->date('tanggal')?->toDateString() ?? now()->toDateString(); 
+  
+        return StrukResource::collection($this->kasir->tanggal($tanggal)) 
+            ->additional(['meta' => ['tanggal' => $tanggal]]); 
+    } 
+  
+    public function store(Request $request): JsonResponse 
+    { 
+        $struk = $this->kasir->proses( 
+            $request->only(['item', 'member', 'metode_bayar', 'dibayar']), 
+            $request->attributes->get('pos_nama'), 
+        ); 
+  
+        // 201 + Location: dua hal yang sejak Modul 3 dijanjikan kontrak 
+        // tetapi baru sekarang benar-benar dikirim. 
+        return StrukResource::make($struk) 
+            ->response() 
+            ->setStatusCode(201) 
+            ->header('Location', route('api.v1.pos.transaksi.show', $struk->nomor)); 
+    } 
+  
+    public function show(string $nomor): StrukResource 
+    { 
+        return StrukResource::make($this->kasir->cari($nomor)); 
+    } 
+} 

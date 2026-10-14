@@ -12,16 +12,12 @@ use Illuminate\Support\Arr;
 
 final class RepositoriTransaksiEloquent implements RepositoriTransaksi
 {
-    public function tanggal(string $tanggal): array
-    {
-        return Transaksi::query()
-            ->with('item')               // 1 kueri untuk SELURUH baris struk 
-            ->tanggal($tanggal) 
-            ->orderBy('nomor') 
-            ->get() 
-            ->map($this->keArray(...)) 
-            ->all(); 
-    } 
+    public function tanggal(string $tanggal): Collection 
+{ 
+    return Transaksi::query()->with('item')->tanggal($tanggal) 
+        ->orderBy('nomor')->get(); 
+} 
+  
   
     public function cariNomor(string $nomor): ?array 
     { 
