@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
-interface RepositoriProduk
+interface RepositoriTransaksi
 {
     public function tanggal(string $tanggal): array;
     

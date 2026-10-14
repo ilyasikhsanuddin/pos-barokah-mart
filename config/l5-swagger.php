@@ -44,7 +44,8 @@ return [
                  * Absolute paths to directory containing the swagger annotations are stored.
                  */
                 'annotations' => [
-                    base_path('app'),
+                    base_path('app/Http/Controllers/Api'),
+                    base_path('app/OpenApi'),
                 ],
             ],
         ],
@@ -155,8 +156,8 @@ return [
              * @see \OpenApi\scan
              */
             'processors' => [
-                // \App\SwaggerProcessors\SchemaQueryParameter::class,
-                // ['class' => \App\SwaggerProcessors\Custom::class, 'after' => \OpenApi\Processors\AugmentSchemas::class],
+                // \app\SwaggerProcessors\SchemaQueryParameter::class,
+                // ['class' => \app\SwaggerProcessors\Custom::class, 'after' => \OpenApi\Processors\AugmentSchemas::class],
             ],
 
             /**
@@ -171,7 +172,14 @@ return [
              * @note This option overwrites `paths.excludes`
              * @see \OpenApi\scan
              */
-            'exclude' => [],
+            'exclude' => [
+                base_path('app/Domain'),
+                base_path('app/Contracts'),
+                base_path('app/Models'),
+                base_path('app/Exceptions'),
+            ],
+
+            'validate' => false,
 
             /*
              * Allows to generate specs either for OpenAPI 3.0.0 or OpenAPI 3.1.0.
@@ -272,7 +280,7 @@ return [
         'additional_config_url' => null,
 
         /*
-         * Apply a sort to the operation list of each API. It can be 'alpha' (sort by paths alphanumerically),
+         * apply a sort to the operation list of each API. It can be 'alpha' (sort by paths alphanumerically),
          * 'method' (sort by HTTP method).
          * Default is the order returned by the server unchanged.
          */
