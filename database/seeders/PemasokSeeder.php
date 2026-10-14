@@ -24,6 +24,7 @@ final class PemasokSeeder extends Seeder
     private const PASOKAN = [ 
         'SKU-001' => [['PMS-01', 64800, true]], 
         'SKU-002' => [['PMS-01', 16300, true]], 
+        'SKU-003' => [['PMS-01', 13900, true]],
         'SKU-004' => [['PMS-02', 20400, true], ['PMS-01', 21100, false]], 
         'SKU-005' => [['PMS-02',  7900, true]], 
         'SKU-006' => [['PMS-01',  2950, true]], 
