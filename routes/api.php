@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Api\V1\PemasokController;
+use App\Http\Controllers\Api\PemasokController;
 use App\Http\Controllers\Api\V1\LaporanController;
 use App\Http\Controllers\Api\V1\ProdukController;
 use App\Http\Controllers\Api\V1\TransaksiController;
@@ -14,9 +14,9 @@ Route::get('/ping', function () {
 
 Route::prefix('v1/pos')
     ->name('api.v1.pos.')
-    ->middleware('kasir')
+    ->middleware(['kasir', 'saring.kolom']) // <-- DIUBAH: tambah saring.kolom
     ->group(function () {
-        
+
         // Rute Produk & Katalog
         Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
         Route::get('/produk/{sku}', [ProdukController::class, 'show'])
@@ -47,7 +47,7 @@ Route::prefix('v1/pos')
             Route::get('/harian', [LaporanController::class, 'harian'])->name('harian');
             Route::get('/terlaris', [LaporanController::class, 'terlaris'])->name('terlaris');
 
-            // AB-14: Penjualan per kategori 
+            // AB-14: Penjualan per kategori
             Route::get('/kategori', [LaporanController::class, 'kategori'])->name('kategori');
         });
 

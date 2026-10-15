@@ -5,6 +5,7 @@ use App\Http\Middleware\HitungKueri;
 use App\Http\Middleware\JamOperasional;
 use App\Http\Middleware\KunciApiKasir;
 use App\Http\Middleware\PeranKasir;
+use App\Http\Middleware\SaringKolom;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,17 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Middleware global untuk semua route API
-        $middleware->api(append: [
-            CatatRequest::class,
-            HitungKueri::class, 
-        ]);
-
         // Middleware yang dipanggil menggunakan alias
         $middleware->alias([
             'kasir' => KunciApiKasir::class,
             'peran' => PeranKasir::class,
             'jam.buka' => JamOperasional::class,
+            'saring.kolom' => SaringKolom::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
