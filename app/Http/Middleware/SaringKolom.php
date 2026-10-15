@@ -1,4 +1,3 @@
-@'
 <?php
 
 declare(strict_types=1);
@@ -55,4 +54,3 @@ final class SaringKolom
         return array_intersect_key($baris, array_flip($kolom));
     }
 }
-'@ | Set-Content -Path app\Http\Middleware\SaringKolom.php -Encoding utf8
