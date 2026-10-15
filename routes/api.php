@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Api\V1\PemasokController;
+use App\Http\Controllers\Api\PemasokController;
 use App\Http\Controllers\Api\V1\LaporanController;
 use App\Http\Controllers\Api\V1\ProdukController;
 use App\Http\Controllers\Api\V1\TransaksiController;
@@ -32,7 +32,7 @@ Route::prefix('v1/pos')
         // Rute Transaksi
         Route::get('/transaksi', [TransaksiController::class, 'index'])->name('transaksi.index');
         Route::post('/transaksi', [TransaksiController::class, 'store'])
-            ->middleware('jam.buka')
+           ->middleware(['idempoten', 'jam.buka'])
             ->name('transaksi.store');
         Route::get('/transaksi/{nomor}', [TransaksiController::class, 'show'])
             ->where('nomor', 'POS-[0-9]{8}-[0-9]{4}')

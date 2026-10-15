@@ -13,16 +13,10 @@ use App\Exceptions\PembayaranKurang;
 use App\Exceptions\StokTidakCukup;
 use App\Exceptions\TransaksiSudahDibatalkan;
 use App\Exceptions\TransaksiTidakDitemukan;
+use App\Models\Transaksi;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Bagian yang BERUBAH dari Modul 3 hanya tiga:
- *   1. proses() dibungkus DB::transaction()
- *   2. stok dikurangi setelah struk tersimpan (AB-11)
- *   3. batalkan() mengembalikan stok
- * 
- * Method hitung() berasal dari Modul 3 dengan aturan AB-1 sampai AB-6.
- */
 final class LayananKasir
 {
     public function __construct(
@@ -31,66 +25,72 @@ final class LayananKasir
     ) {}
 
     /**
+     * Membuat transaksi secara atomik dan mengurangi stok.
+     *
      * @param array<string, mixed> $data
-     * @return array<string, mixed>
      */
-    public function proses(array $data, string $kasir): array
+    public function proses(array $data, string $kasir): Transaksi
     {
-        /*
-        | DB::transaction() menjamin sifat "semua atau tidak sama sekali".
-        | Bila pengurangan stok baris ketiga gagal, penyimpanan struk dan
-        | pengurangan stok baris pertama dan kedua ikut dibatalkan.
-        */
-        return DB::transaction(function () use ($data, $kasir): array {
-
-            // 1. Kunci baris produk, lalu periksa ulang stoknya.
+        return DB::transaction(function () use ($data, $kasir): Transaksi {
+            // 1. Kunci stok dan periksa ketersediaan.
             foreach ($data['item'] as $baris) {
                 $tersedia = $this->produk->kunciStok($baris['sku']);
 
-                if ($baris['kuantitas'] > $tersedia) {                  // AB-8
-                    throw new StokTidakCukup($baris['sku'], (int) $baris['kuantitas'], $tersedia);
+                if ($baris['kuantitas'] > $tersedia) {
+                    throw new StokTidakCukup(
+                        $baris['sku'],
+                        (int) $baris['kuantitas'],
+                        $tersedia,
+                    );
                 }
             }
 
-            // 2. Hitung seluruh nilai uang (AB-1 s.d. AB-6).
+            // 2. Hitung nilai transaksi.
             $metode = MetodeBayar::from($data['metode_bayar']);
             $member = (bool) ($data['member'] ?? false);
             $rincian = $this->hitung($data['item'], $member);
 
             $totalBayar = new Uang($rincian['total_bayar']);
 
-            $dibayar = $metode->butuhKembalian()                        // AB-7
+            $dibayar = $metode->butuhKembalian()
                 ? new Uang((int) ($data['dibayar'] ?? 0))
                 : $totalBayar;
 
-            if ($dibayar->kurangDari($totalBayar)) {                    // AB-9
-                throw new PembayaranKurang($totalBayar->kurang($dibayar));
+            if ($dibayar->kurangDari($totalBayar)) {
+                throw new PembayaranKurang(
+                    $totalBayar->kurang($dibayar)
+                );
             }
 
-            // 3. Susun struk lalu simpan.
-            $transaksi = array_merge([
-                'nomor'        => $this->nomorBaru(),
-                'kasir'        => $kasir,
-                'member'       => $member,
+            // 3. Simpan transaksi beserta item.
+            $dataTransaksi = array_merge([
+                'nomor' => $this->nomorBaru(),
+                'kasir' => $kasir,
+                'member' => $member,
                 'metode_bayar' => $metode->value,
-                'status'       => StatusTransaksi::Selesai->value,
+                'status' => StatusTransaksi::Selesai->value,
             ], $rincian, [
-                'dibayar'   => $dibayar->rupiah,
+                'dibayar' => $dibayar->rupiah,
                 'kembalian' => $dibayar->kurang($totalBayar)->rupiah,
             ]);
 
-            $this->transaksi->simpan($transaksi);
+            $struk = $this->transaksi->simpan($dataTransaksi);
 
-            // 4. Kurangi stok (AB-11).
+            // 4. Kurangi stok setelah transaksi disimpan.
             foreach ($data['item'] as $baris) {
-                $this->produk->ubahStok($baris['sku'], -1 * (int) $baris['kuantitas']);
+                $this->produk->ubahStok(
+                    $baris['sku'],
+                    -1 * (int) $baris['kuantitas'],
+                );
             }
 
-            return $this->transaksi->cariNomor($transaksi['nomor']);
+            return $struk;
         });
     }
 
     /**
+     * Menghitung rincian transaksi tanpa menyimpannya.
+     *
      * @param array<int, array<string, mixed>> $item
      * @return array<string, mixed>
      */
@@ -105,19 +105,27 @@ final class LayananKasir
 
         foreach ($item as $masukan) {
             $produk = $this->produk->cariSku($masukan['sku']);
+
             if ($produk === null) {
-                throw new \App\Domain\ProdukTidakDitemukan($masukan['sku']); // -> 404
+                throw new \App\Domain\ProdukTidakDitemukan(
+                    $masukan['sku']
+                );
             }
 
             $kuantitas = (int) $masukan['kuantitas'];
-            if ($kuantitas > $produk['stok']) { // AB-8
-                throw new StokTidakCukup($produk['sku'], $kuantitas, $produk['stok']);
+
+            if ($kuantitas > $produk['stok']) {
+                throw new StokTidakCukup(
+                    $produk['sku'],
+                    $kuantitas,
+                    $produk['stok'],
+                );
             }
 
             $hargaSatuan = new Uang($produk['harga']);
-            $totalBaris = $hargaSatuan->kali($kuantitas); // AB-1
+            $totalBaris = $hargaSatuan->kali($kuantitas);
 
-            $diskonBaris = $kuantitas >= $minimalGrosir // AB-2
+            $diskonBaris = $kuantitas >= $minimalGrosir
                 ? $totalBaris->persen($persenGrosir)
                 : Uang::nol();
 
@@ -125,92 +133,111 @@ final class LayananKasir
             $diskonItem = $diskonItem->tambah($diskonBaris);
 
             $baris[] = [
-                'sku'          => $produk['sku'],
-                'nama'         => $produk['nama'],
+                'sku' => $produk['sku'],
+                'nama' => $produk['nama'],
                 'harga_satuan' => $hargaSatuan->rupiah,
-                'kuantitas'    => $kuantitas,
-                'diskon'       => $diskonBaris->rupiah,
-                'total'        => $totalBaris->kurang($diskonBaris)->rupiah,
-                'total_format' => $totalBaris->kurang($diskonBaris)->format(),
+                'kuantitas' => $kuantitas,
+                'diskon' => $diskonBaris->rupiah,
+                'total' => $totalBaris->kurang($diskonBaris)->rupiah,
+                'total_format' => $totalBaris
+                    ->kurang($diskonBaris)
+                    ->format(),
             ];
         }
 
-        $diskonMember = $member // AB-3
-            ? $subtotal->kurang($diskonItem)->persen((float) config('pos.member.persen'))
+        $diskonMember = $member
+            ? $subtotal->kurang($diskonItem)->persen(
+                (float) config('pos.member.persen')
+            )
             : Uang::nol();
 
         $totalDiskon = $diskonItem->tambah($diskonMember);
-        $dpp = $subtotal->kurang($totalDiskon); // AB-4
-        $ppn = $dpp->persen((float) config('pos.ppn_persen')); // AB-5
+        $dpp = $subtotal->kurang($totalDiskon);
+        $ppn = $dpp->persen((float) config('pos.ppn_persen'));
         $total = $dpp->tambah($ppn);
-        $totalBayar = $total->bulatkanKeAtas((int) config('pos.pembulatan')); // AB-6
+        $totalBayar = $total->bulatkanKeAtas(
+            (int) config('pos.pembulatan')
+        );
 
         return [
-            'item'               => $baris,
-            'subtotal'           => $subtotal->rupiah,
-            'diskon_grosir'      => $diskonItem->rupiah,
-            'diskon_member'      => $diskonMember->rupiah,
-            'total_diskon'       => $totalDiskon->rupiah,
-            'dpp'                => $dpp->rupiah,
-            'ppn'                => $ppn->rupiah,
-            'total'              => $total->rupiah,
-            'pembulatan'         => $totalBayar->kurang($total)->rupiah,
-            'total_bayar'        => $totalBayar->rupiah,
+            'item' => $baris,
+            'subtotal' => $subtotal->rupiah,
+            'diskon_grosir' => $diskonItem->rupiah,
+            'diskon_member' => $diskonMember->rupiah,
+            'total_diskon' => $totalDiskon->rupiah,
+            'dpp' => $dpp->rupiah,
+            'ppn' => $ppn->rupiah,
+            'total' => $total->rupiah,
+            'pembulatan' => $totalBayar->kurang($total)->rupiah,
+            'total_bayar' => $totalBayar->rupiah,
         ];
     }
 
-    /** @return array<string, mixed> */
-    public function batalkan(string $nomor, string $alasan, string $olehKasir): array
-    {
-        return DB::transaction(function () use ($nomor, $alasan, $olehKasir): array {
-
+    /**
+     * Membatalkan transaksi dan mengembalikan stok.
+     */
+    public function batalkan(
+        string $nomor,
+        string $alasan,
+        string $olehKasir,
+    ): Transaksi {
+        return DB::transaction(function () use (
+            $nomor,
+            $alasan,
+            $olehKasir,
+        ): Transaksi {
             $transaksi = $this->transaksi->cariNomor($nomor);
 
             if ($transaksi === null) {
-                throw new TransaksiTidakDitemukan($nomor);              // -> 404
+                throw new TransaksiTidakDitemukan($nomor);
             }
 
-            if ($transaksi['status'] === StatusTransaksi::Batal->value) { 
-                throw new TransaksiSudahDibatalkan($nomor);             // -> 409, AB-10
+            if ($transaksi->status->value === StatusTransaksi::Batal->value) {
+                throw new TransaksiSudahDibatalkan($nomor);
             }
 
             $this->transaksi->perbarui($nomor, [
-                'status'          => StatusTransaksi::Batal->value,
-                'alasan_batal'    => $alasan,
+                'status' => StatusTransaksi::Batal->value,
+                'alasan_batal' => $alasan,
                 'dibatalkan_oleh' => $olehKasir,
                 'dibatalkan_pada' => now(),
             ]);
 
-            // AB-11: barang kembali ke rak.
-            foreach ($transaksi['item'] as $baris) {
-                $this->produk->ubahStok($baris['sku'], (int) $baris['kuantitas']);
+            // Item merupakan model Eloquent, bukan array.
+            foreach ($transaksi->item as $baris) {
+                $this->produk->ubahStok(
+                    $baris->sku,
+                    (int) $baris->kuantitas,
+                );
             }
 
-            return $this->transaksi->cariNomor($nomor);
+            // Ambil ulang model agar status pembatalan terbaru terbaca.
+            return $this->transaksi->cariNomor($nomor)
+                ?? throw new TransaksiTidakDitemukan($nomor);
         });
     }
 
-    /** @return array<int, array<string, mixed>> */
-    public function transaksiTanggal(string $tanggal): array
-{
-    return $this->transaksi->tanggal($tanggal);
-}
-
-    /** @return array<string, mixed> */
-    public function cari(string $nomor): array
+    /**
+     * Mengambil koleksi transaksi berdasarkan tanggal.
+     *
+     * @return Collection<int, Transaksi>
+     */
+    public function tanggal(string $tanggal): Collection
     {
-        $transaksi = $this->transaksi->cariNomor($nomor);
-
-        if ($transaksi === null) {
-            throw new TransaksiTidakDitemukan($nomor);
-        }
-
-        return $transaksi;
+        return $this->transaksi->tanggal($tanggal);
     }
 
     /**
-     * Nomor struk POS-YYYYMMDD-0001. Perhitungan urutannya kini dilakukan
-     * basis data, bukan dengan menghitung isi berkas JSON.
+     * Mencari transaksi berdasarkan nomor struk.
+     */
+    public function cari(string $nomor): Transaksi
+    {
+        return $this->transaksi->cariNomor($nomor)
+            ?? throw new TransaksiTidakDitemukan($nomor);
+    }
+
+    /**
+     * Membuat nomor struk berikutnya.
      */
     private function nomorBaru(): string
     {
